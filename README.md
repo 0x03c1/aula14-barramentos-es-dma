@@ -120,8 +120,10 @@ buffer=   4096 B |      65536 syscalls |    0.140 s |   1917.4 MB/s | 2.136 us/r
    | Sistema | Terminal 1 (observar) | Terminal 2 (copiar) |
    |---|---|---|
    | Linux/WSL | `watch -d -n1 "grep -E 'nvme\|eth\|enp\|wlan' /proc/interrupts"` | `cp dados.bin copia.bin && sync` |
-   | macOS | `sudo powermetrics --samplers interrupts -i 1000` | `cp dados.bin copia.bin && sync` |
+   | macOS | `sudo powermetrics --samplers interrupts -i 1000` (veja a nota abaixo) | `cp dados.bin copia.bin && sync` |
    | Windows | `while ($true) { (Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'").InterruptsPersec; Start-Sleep 1 }` | `Copy-Item dados_64MB.bin copia.bin` |
+
+   > **macOS:** o `powermetrics` mostra no máximo o total de interrupções por CPU, sem separar por dispositivo, e em alguns Macs não mostra nada. Se não aparecer contagem, faça este item com uma dupla que tenha Linux, WSL ou Windows. No Windows o contador também é o total do sistema: compare o valor parado com o valor durante a cópia.
 
 ### Cuidados
 
