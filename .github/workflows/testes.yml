@@ -1,0 +1,86 @@
+name: Testa em Linux, macOS e Windows
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  unix:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instala strace (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq strace
+
+      - name: Experimento completo, limpando o cache antes de cada medição
+        run: ./codigo/experimento.sh 8
+
+      - name: Confere resultados.csv
+        run: bash .github/confere.sh codigo/resultados.csv 8
+
+      - name: Experimento sem sudo (SEM_LIMPAR=1)
+        run: SEM_LIMPAR=1 ./codigo/experimento.sh 8 && bash .github/confere.sh codigo/resultados.csv 8
+
+      - name: Comandos da atividade (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cd codigo
+          head -c 1M dados_8MB.bin > mini.bin
+          strace -c -e trace=read ./io mini.bin 1 2>&1 >/dev/null | grep -E "calls|read"
+          head -5 /proc/interrupts | cut -c1-100
+
+      - name: Comandos da atividade (macOS)
+        if: runner.os == 'macOS'
+        run: sudo powermetrics --samplers interrupts -i 1000 -n 1 | head -40
+
+  windows:
+    name: windows (${{ matrix.compilador }}, ${{ matrix.ps }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { compilador: gcc, ps: powershell }
+          - { compilador: gcc, ps: pwsh }
+          - { compilador: cl,  ps: powershell }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ambiente do Visual Studio (cl)
+        if: matrix.compilador == 'cl'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Experimento (${{ matrix.ps }}, ${{ matrix.compilador }})
+        shell: cmd
+        run: ${{ matrix.ps }} -NoProfile -ExecutionPolicy Bypass -File codigo\experimento.ps1 -MB 8 -Compilador ${{ matrix.compilador }}
+
+      - name: Confere resultados.csv
+        shell: bash
+        run: bash .github/confere.sh codigo/resultados.csv 8
+
+      - name: Git Bash
+        if: matrix.compilador == 'gcc' && matrix.ps == 'powershell'
+        shell: bash
+        run: ./codigo/experimento.sh 8 && bash .github/confere.sh codigo/resultados.csv 8
+
+      - name: Cache frio com RAMMap (Administrador)
+        if: matrix.compilador == 'gcc' && matrix.ps == 'powershell'
+        shell: powershell
+        run: |
+          Invoke-WebRequest https://download.sysinternals.com/files/RAMMap.zip -OutFile RAMMap.zip
+          Expand-Archive RAMMap.zip -DestinationPath codigo -Force
+          $saida = powershell -NoProfile -ExecutionPolicy Bypass -File codigo\experimento.ps1 -MB 8 | Out-String
+          Write-Host $saida
+          if ($saida -notmatch 'RAMMap -Et') { throw 'RAMMap nao foi usado' }
+
+      - name: Comando de interrupções da atividade
+        shell: powershell
+        run: |
+          1..3 | ForEach-Object { (Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'").InterruptsPersec; Start-Sleep 1 }

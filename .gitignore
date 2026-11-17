@@ -1,0 +1,12 @@
+# executáveis gerados
+codigo/io
+codigo/io_fread
+*.exe
+*.obj
+# dados e resultados gerados
+*.bin
+resultados.csv
+# ferramentas baixadas
+RAMMap*
+Eula.txt
+.DS_Store
