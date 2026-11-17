@@ -101,7 +101,7 @@ buffer=   4096 B |      65536 syscalls |    0.140 s |   1917.4 MB/s | 2.136 us/r
 
 ---
 
-## Atividade (em duplas): entrega até o fim da aula, 10h00
+## Atividade (em duplas): entrega até o fim da aula
 
 ### Parte A: medir
 
