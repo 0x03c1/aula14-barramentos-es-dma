@@ -1,4 +1,4 @@
-# Aula 14: Barramentos, Entrada/Saída, Interrupções e DMA
+# Barramentos, Entrada/Saída, Interrupções e DMA
 
 **Infraestrutura de Hardware · CESAR School · 2026.2**
 
